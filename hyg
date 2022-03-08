@@ -1,0 +1,179 @@
+import sys
+from typing import Optional, List, Tuple
+import random
+# В этом файле активно используются type hints — возможность указать типы
+# аргументов и возвращаемого результата у функций вот, например, так:
+# def f(x: int, y: str) -> float:
+# Первый аргумент функции f — это целое число, второй — строка, а возвращает функция число с плавающей точкой
+# С ними должно быть понятнее, что именно нужно передавать функции и что она возвращает.
+# Какие ещё типы можно указывать кроме int и str? Много разных. Вот несколько примеров:
+#   list[int] — список целых чисел
+#   list[list[int]] — список списков целых чисел
+#   Optional[str] — либо строка, либо None
+
+class State:
+    def __init__(self, columns: 'list[list[int]]', score: int = 0):
+        self.columns = columns
+
+        self.score = score
+
+
+    def __str__(self):
+        w = len(self.columns)
+        if w == 0:
+            return '.'
+        h = max(len(col) for col in self.columns)
+        rows = []
+        for y in range(h - 1, -1, -1):
+            row = []
+            for x in range(w):
+                row.append('.' if y >= len(self.columns[x]) else str(self.columns[x][y]))
+            rows.append(' '.join(row))
+        return '\n'.join(rows)
+
+    def moves(self,  x: int, y: int, move: 'list[tuple[int, int]]') -> 'list[list[tuple[int, int]]]':
+        """
+        Возвращает список ходов, которые можно отправить в apply_move.
+        """
+        visited_tiple = set() #1 посещенные тайлы, множество
+        list_moves = [] #2 список ходов, где будет накапливаться рез-т
+        while len(visited_tiple)!=225: #3 пока все тайлы не будут посещены
+            if (x, y) not in visited_tiple: #если клетка не находится в посещенных
+                self.dfs(x, y, move)#3/1        ## обход одноцветной области
+                list_moves.append(move)#3/2     #добавляем в список ходов одноцветную область
+                visited_tiple.add(move)#3/3     #добавляем в посещеные тайлы каждую клетку из области
+        return list_moves#4     #возвращаем список ходов
+
+
+    def dfs(self, x: int, y: int, move: 'list[tuple[int, int]]'):
+        """
+            """
+        start_tiple = (x, y)
+        move.append((start_tiple))#1 добавляем стартовый тайл в move, move это список координат клеток одноцв области
+        ne_ti1 = x+1, y
+        ne_ti2 = x, y-1
+        ne_ti3 = x-1, y
+        ne_ti4 = x, y+1
+        next_tiple = [ne_ti1, ne_ti2, ne_ti3, ne_ti4]#2 создаем список всевозможных соседей start_tiple
+
+        for i in next_tiple: #для каждого из всевозможных соседей
+            while True: #здесь цикл нужен т к  иначе мы вроде рекурсию не запустим
+                if ((next_tiple[i]) == start_tiple) and (next_tiple[i] not in move):
+                    #если цвет след тайла одинаков с цветом начального, и след тайл не находится в Move
+                    move.append(next_tiple[i])  #добавляем в мув след тайпл
+                    start_tiple = next_tiple[i]  #делаем стартовый тайл след тайл, для рекурсии
+                if ((next_tiple[i]) == start_tiple) and (next_tiple[i] in move):  #если цвета одинаковы но след тайл уже в мув
+                    next_tiple[i] = start_tiple #след тайл равен стартовому, чтобы вернутся к тайлам если вдруг у них были еще соседи
+                    #нужно в обратном порядке запустить
+
+        return move # возвращаем move, одноцветную область
+
+    def apply_move(self, list_moves: 'list[tuple[int, int]]', columns: 'list[list[int]]') -> 'State': #moves-list_moves
+
+        new_columns = []#1 создали список для столбцов которые образуются впоследств
+        for i in columns:#2 для каждого столбца которые в columns
+            new_column = []#2/1 создаем новый пустой столбец который будем вносить в new columns если он не будет пустым
+
+            if i not in list_moves: #  если исходного столбца нет в тайлох прим-го хода
+                new_column.append(i) #добавляем все тайлы исходного столбца в new_column
+                #если исходный столбец не изменялся move
+
+            if len(new_column)>=1: #если новый столбец не пустой
+                new_columns.append(new_column)#2/3 добавляем его в список новых столбцов
+        newstate = State(new_columns)#3 создаем объект нового состояния и возвращаем его
+        return newstate
+
+
+def greedy_ai(state: State, estimate_state) -> 'Optional[list[tuple[int, int]]]':
+    """
+    Среди всех доступных ходов выбирает тот, после применения которого, estimate_state дает максимальное значение.
+    Возвращает ход или None, если ходов нет.
+
+    +1 полчить список возможных ходов state.moves()
+    одноцвеиная область это move
+   + 2 аждый ход применить и оценить р-т
+    +3 выбрать ход с макс оценкой
+    4 повторяем
+    """
+  
+
+    all_probably_moves = [state.moves(x, y, move)] #олучаем список всех доступных ходов
+    estimate_state = 0
+    hod = []
+    none_hod = None
+    for i in range(len(all_probably_moves)):
+        estimate(state.apply_move(all_probably_moves[i], state.columns))
+        if estimate((state.apply_move(all_probably_moves[i], state.columns)))>estimate_state:
+            hod.clear()
+            hod.append(i)
+            estimate_state = estimate(state.apply_move(all_probably_moves[i], state.columns))
+    if len(hod)>=1:
+        return hod
+    else:
+        return none_hod
+
+def estimate(state: State) -> float:
+    """
+    Чем больше возвращаемое число, тем лучше это состояние.
+    """
+   
+    n = len(state.moves.visited_tiples)
+    score = (n-2)**2 # то что уже у нас есть 
+    score_ves = 0
+    for i in state.moves.list_moves:
+        k = len(state.moves.visited_tiples)
+        score1 = (k-2)**2
+        score_ves = score_ves+score1
+    all = score+score_ves
+    return all
+  
+
+
+
+def solve(state: State) -> 'list[list[tuple[int, int]]]':
+    solution = []
+    while True:
+        move = greedy_ai(state, estimate)
+        if move is None:
+            break
+        solution.append(move)
+        state = state.apply_move(move)
+    return solution
+
+
+def read_state_from(lines: 'list[str]') -> State:
+    rows = []
+    for line in lines:
+        row = []
+        for color in line.split():
+            row.append(-1 if color == '.' else int(color))
+        rows.append(row)
+
+    # Переводим в наш формат: список столбцов, клетки в которых перечислены снизу вверх, без пустых клеток
+    cols = [[row[x] for row in reversed(rows) if row[x] != -1] for x in range(len(rows[0]))]
+    return State(cols)
+
+
+def read_state() -> State:
+    lines = [input() for _ in range(15)]
+    return read_state_from(lines)
+
+
+def main():
+    first_move = True
+    move_index = 0
+    moves = []
+    while True:
+        state = read_state()
+        if first_move:
+            print(state, file=sys.stderr)
+            moves = solve(state)
+        move = moves[move_index]
+        x, y = move[0]
+        move_index += 1
+        print(x, y)
+        first_move = False
+
+
+if __name__ == '__main__':
+    main()
