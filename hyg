@@ -36,6 +36,16 @@ class State:
                         visited_tiple.update(move)
         return moves
 
+    def dfs(self, x: int, y: int, move: 'list[tuple[int, int]]'):
+        w = len(self.columns) #количество тайлов на поле всего
+        move.append((x,y))
+        color = self.columns[x][y] # цвет это координата в columns
+        for ny,nx in (y - 1, x), (y+1, x), (y, x-1), (y, x+1): # рассматриваем для соседей
+            if 0 <= nx < w and 0<= ny < len(self.columns[nx]):  # проверка не вылез ли сосед за поле
+                if self.columns [nx][ny] == color and (nx, ny) not in move:
+                    self.dfs(nx, ny, move)
+        return move
+
 
 
     def apply_move(self, move: 'list[tuple[int, int]]') -> 'State':
@@ -57,6 +67,12 @@ class State:
         new_state = State(new_columns, new_score) #создаем новое состояние и возвращаем его
         return new_state
 
+
+
+
+
+
+
 states = [] #это список списков состояний,
 #внутри states t будет список нераскрытых серых состояний
 #как бы список слоев которые также являются списками
@@ -69,8 +85,11 @@ min_item = heapq.heappop(states)  # находит мин элемент и из
     estimate(state[t])
     if max(estimate(state[t]))==:
 
-
-
+ноды это по сути тоже чтото вроже одноцветных областей
+чтобы получить всевозможные нодесы нужно
+попытаться удалить каждую одноцветную область
+еще как то запоминать информацию о нодесах которых нет уже
+для получения стате нужно каждый раз проверять через апли мув
 
 
 
